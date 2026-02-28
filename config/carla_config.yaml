@@ -7,7 +7,7 @@ carla:
   timeout: 10.0
   
   # Map selection
-  map_name: "Town05"  # Town05 has good intersections
+  map_name: "Town01"  # Town01 is simpler and more stable
   
   # Simulation settings
   synchronous_mode: true
