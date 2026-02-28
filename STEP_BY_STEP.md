@@ -102,7 +102,7 @@ git push -u origin main
 
 ### 2. הגדרת Pod
 
-**Container Disk**: `70 GB`
+**Container Disk**: `30 GB` (מספיק! אם תאמן YOLO שים 40GB)
 
 **Expose HTTP Ports**: לחץ "+ Add Port" 3 פעמים:
 - `2000`

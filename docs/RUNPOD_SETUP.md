@@ -80,8 +80,10 @@ git push -u origin main
 - אם Custom, שים: `nvidia/cuda:12.1.0-devel-ubuntu22.04`
 
 **Container Disk**:
-- לפחות **50GB** (CARLA + models + data)
-- מומלץ: **70GB**
+- מינימום: **25GB** (רק CARLA + YOLO)
+- מומלץ: **30GB** ✅ (כולל מרווח בטיחות)
+- אם תאמן YOLO: **40GB**
+- אם תשמור videos: **50GB**
 
 **Expose Ports**:
 לחץ על **"+ Add Port"** והוסף:
