@@ -1,0 +1,79 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# YOLO
+runs/
+weights/
+*.pt
+*.weights
+*.onnx
+yolov8*.pt
+yolov10*.pt
+datasets/
+yolo_training_data/
+
+# CARLA
+carla_out/
+recordings/
+*.rrlog
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+logs/
+*.out
+
+# Environment
+.env
+.env.local
+secrets/
+
+# Data
+data/
+*.mp4
+*.avi
+screenshots/
+videos/
+
+# Models (large files)
+models/*.pt
+models/*.onnx
+checkpoints/
+
+# Temporary
+tmp/
+temp/
+*.tmp

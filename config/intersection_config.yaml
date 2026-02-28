@@ -1,0 +1,111 @@
+# Intersection Configuration
+# This file defines the physical layout of the intersection
+
+intersection:
+  name: "Four-Way-Intersection"
+  type: "cross"  # cross, t-junction, roundabout
+  
+  # Number of lanes (affects observation vector size)
+  num_lanes: 8
+  
+  # Lane definitions with ROI (Region of Interest) for vehicle counting
+  lanes:
+    - id: 0
+      name: "North_Straight"
+      direction: "north"
+      movement: "straight"
+      roi:  # Coordinates in camera frame [x1, y1, x2, y2]
+        - [100, 200, 300, 400]
+    
+    - id: 1
+      name: "North_Left"
+      direction: "north"
+      movement: "left"
+      roi:
+        - [50, 200, 150, 400]
+    
+    - id: 2
+      name: "South_Straight"
+      direction: "south"
+      movement: "straight"
+      roi:
+        - [500, 200, 700, 400]
+    
+    - id: 3
+      name: "South_Left"
+      direction: "south"
+      movement: "left"
+      roi:
+        - [650, 200, 750, 400]
+    
+    - id: 4
+      name: "East_Straight"
+      direction: "east"
+      movement: "straight"
+      roi:
+        - [300, 100, 500, 200]
+    
+    - id: 5
+      name: "East_Left"
+      direction: "east"
+      movement: "left"
+      roi:
+        - [300, 50, 500, 150]
+    
+    - id: 6
+      name: "West_Straight"
+      direction: "west"
+      movement: "straight"
+      roi:
+        - [300, 500, 500, 700]
+    
+    - id: 7
+      name: "West_Left"
+      direction: "west"
+      movement: "left"
+      roi:
+        - [300, 650, 500, 750]
+
+  # Traffic light phases (affects action space)
+  traffic_phases:
+    - id: 0
+      name: "North_South_Straight"
+      green_lanes: [0, 2]
+      duration: 30
+    
+    - id: 1
+      name: "North_South_Left"
+      green_lanes: [1, 3]
+      duration: 20
+    
+    - id: 2
+      name: "East_West_Straight"
+      green_lanes: [4, 6]
+      duration: 30
+    
+    - id: 3
+      name: "East_West_Left"
+      green_lanes: [5, 7]
+      duration: 20
+    
+    - id: 4
+      name: "All_Red"
+      green_lanes: []
+      duration: 3
+
+  # Camera settings
+  cameras:
+    - id: 0
+      name: "intersection_overhead"
+      position:  # [x, y, z] in meters
+        x: 0.0
+        y: 0.0
+        z: 25.0  # 25 meters above intersection
+      rotation:  # [pitch, yaw, roll] in degrees
+        pitch: -90.0  # Looking straight down
+        yaw: 0.0
+        roll: 0.0
+      resolution:
+        width: 1920
+        height: 1080
+      fov: 90  # Field of view in degrees

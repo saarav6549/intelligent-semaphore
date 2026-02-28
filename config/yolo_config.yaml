@@ -1,0 +1,36 @@
+# YOLO Detection Configuration
+
+yolo:
+  # Model selection
+  model_version: "yolov8n"  # Options: yolov8n, yolov8s, yolov8m, yolov8l, yolov8x, yolov10n, etc.
+  
+  # Pre-trained weights (will download automatically)
+  weights: "yolov8n.pt"
+  
+  # Detection settings
+  detection:
+    confidence_threshold: 0.5  # Minimum confidence to count as detection
+    iou_threshold: 0.45  # Non-maximum suppression threshold
+    max_detections: 300  # Maximum number of detections per image
+    
+    # Classes to detect (COCO dataset class IDs)
+    # 2 = car, 3 = motorcycle, 5 = bus, 7 = truck
+    target_classes: [2, 3, 5, 7]
+    
+  # Training settings (for fine-tuning on CARLA data)
+  training:
+    epochs: 100
+    batch_size: 16
+    image_size: 640
+    learning_rate: 0.01
+    optimizer: "SGD"
+    data_yaml: "./datasets/carla_vehicles/data.yaml"
+    
+  # Performance
+  device: "cuda"  # cuda or cpu
+  half_precision: true  # Use FP16 for faster inference
+  
+  # Visualization
+  show_detections: true
+  save_detection_images: false
+  output_path: "./detection_results/"

@@ -1,0 +1,32 @@
+# CARLA Simulator Configuration
+
+carla:
+  # Connection settings
+  host: "localhost"
+  port: 2000
+  timeout: 10.0
+  
+  # Map selection
+  map_name: "Town05"  # Town05 has good intersections
+  
+  # Simulation settings
+  synchronous_mode: true
+  fixed_delta_seconds: 0.05  # 20 FPS
+  no_rendering_mode: false  # Set to true for headless training
+  
+  # Weather
+  weather:
+    cloudiness: 10.0
+    precipitation: 0.0
+    sun_altitude_angle: 45.0
+    
+  # Traffic generation
+  traffic:
+    num_vehicles: 50  # Number of vehicles to spawn
+    num_pedestrians: 0  # For safety, start with 0
+    vehicle_filter: "vehicle.*"  # Spawn all vehicle types
+    
+  # Recording (optional)
+  recording:
+    enabled: false
+    path: "./carla_recordings/"
