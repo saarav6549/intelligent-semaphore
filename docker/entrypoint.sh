@@ -45,7 +45,7 @@ case $MODE in
   api)
     echo "Starting API server only..."
     cd /workspace
-    python3 -m uvicorn api.server:app --host 0.0.0.0 --port 8000 --reload
+    python3.8 -m uvicorn api.server:app --host 0.0.0.0 --port 8000 --reload
     ;;
     
   all)
@@ -58,11 +58,11 @@ case $MODE in
     sleep 30
     
     echo "Testing CARLA connection..."
-    python3 -c "import carla; client = carla.Client('localhost', 2000); client.set_timeout(10.0); print(f'CARLA version: {client.get_server_version()}')" || echo "CARLA not ready yet, continuing..."
+    python3.8 -c "import carla; client = carla.Client('localhost', 2000); client.set_timeout(10.0); print(f'CARLA version: {client.get_server_version()}')" || echo "CARLA not ready yet, continuing..."
     
     echo "Starting API server..."
     cd /workspace
-    python3 -m uvicorn api.server:app --host 0.0.0.0 --port 8000 &
+    python3.8 -m uvicorn api.server:app --host 0.0.0.0 --port 8000 &
     API_PID=$!
     
     echo ""

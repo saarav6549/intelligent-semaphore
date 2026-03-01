@@ -4,9 +4,6 @@ __pycache__/
 *$py.class
 *.so
 .Python
-env/
-venv/
-ENV/
 build/
 develop-eggs/
 dist/
@@ -22,58 +19,102 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
 
-# YOLO
-runs/
-weights/
-*.pt
-*.weights
-*.onnx
-yolov8*.pt
-yolov10*.pt
-datasets/
-yolo_training_data/
+# Virtual environments
+venv/
+ENV/
+env/
+.venv
 
-# CARLA
-carla_out/
-recordings/
-*.rrlog
-
-# IDE
-.vscode/
+# PyCharm
 .idea/
-*.swp
-*.swo
-*~
 
-# OS
-.DS_Store
-Thumbs.db
-desktop.ini
+# VS Code
+.vscode/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb
+
+# Environment variables
+.env
+.env.local
+*.env
 
 # Logs
 *.log
 logs/
 *.out
 
-# Environment
-.env
-.env.local
-secrets/
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
 
-# Data
-data/
-*.mp4
-*.avi
-screenshots/
-videos/
+# Testing
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.hypothesis/
+
+# MyPy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# CARLA data
+datasets/
+runs/
+experiments/
 
 # Models (large files)
 models/*.pt
+models/*.pth
 models/*.onnx
-checkpoints/
+*.weights
+yolov*.pt
 
-# Temporary
+# Temporary files
 tmp/
 temp/
 *.tmp
+*.bak
+*.backup
+
+# Docker volumes
+docker-volumes/
+
+# RunPod specific
+runpod_data/
+
+# Build artifacts
+*.egg
+*.whl
+
+# Screenshots
+screenshots/
+*.png
+*.jpg
+*.jpeg
+
+# Videos
+videos/
+*.mp4
+*.avi
+
+# Profiling
+*.prof
+*.lprof
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Local configuration
+local_config.yaml

@@ -34,7 +34,18 @@ cd intelligent-semaphore
 bash scripts/setup_runpod.sh  # 30 דקות!
 ```
 
-### צעד 5: הרץ
+### צעד 5: הרץ CARLA
+
+**אופציה A: הפעלה ישירה (מהיר יותר)**
+```bash
+# הפעל את CARLA ברקע
+~/CarlaUE4/Binaries/Linux/CarlaUE4-Linux-Shipping -RenderOffScreen -carla-rpc-port=2000 &
+
+# בדוק שרץ
+ps aux | grep Carla
+```
+
+**אופציה B: דרך Docker (מומלץ לפרודקשן)**
 ```bash
 docker run -d --name carla-system --gpus all \
   -p 2000:2000 -p 8000:8000 -p 6080:6080 \

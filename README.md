@@ -1,140 +1,201 @@
-# Intelligent Traffic Light System - Team B (Vision & Sensing)
+# 🚦 Intelligent Traffic Light - Team B
 
-## Project Overview
-This is the **Vision & Sensing module** for an intelligent traffic light system that uses:
-- **CARLA**: Realistic driving simulator for visualization
-- **YOLO**: Vehicle detection from intersection cameras  
-- **ROI Mapping**: Converting detections to lane-based vehicle counts
-- **REST API**: Providing observations to Team A's PPO reinforcement learning agent
+> **CARLA Vision System** for Reinforcement Learning Traffic Control
 
-## Architecture
+Complete system for running CARLA simulator with YOLO vehicle detection on GPU, providing a REST API for PPO agents.
 
-```
-RunPod GPU Instance (Cloud)
-├── CARLA Simulator (renders intersection)
-├── YOLO Detector (detects vehicles)
-├── ROI Mapper (counts vehicles per lane)
-└── REST API (sends observations)
-      ↓
-Team A's PPO Agent (receives observations, returns actions)
-```
+---
 
-## Project Structure
+## 🎯 Start Here
 
-```
-intelligent_semaphore/
-├── docker/
-│   ├── Dockerfile                    # Full CARLA + YOLO + VNC environment
-│   ├── docker-compose.yml            # Optional local testing
-│   └── entrypoint.sh                 # Container startup script
-├── carla_integration/
-│   ├── __init__.py
-│   ├── carla_client.py               # Connect to CARLA server
-│   ├── camera_setup.py               # Setup intersection cameras
-│   ├── traffic_light_controller.py   # Control traffic light phases
-│   └── scenario_loader.py            # Load traffic scenarios
-├── yolo_detection/
-│   ├── __init__.py
-│   ├── train_yolo.py                 # Fine-tune YOLO on CARLA data
-│   ├── detect_vehicles.py            # Real-time vehicle detection
-│   ├── roi_mapping.py                # Map bounding boxes to lanes
-│   └── dataset_generator.py          # Generate training data from CARLA
-├── sensing_pipeline/
-│   ├── __init__.py
-│   ├── vehicle_counter.py            # Count vehicles per lane
-│   ├── observation_builder.py        # Build observation vector for RL
-│   └── state_manager.py              # Manage intersection state
-├── api/
-│   ├── __init__.py
-│   ├── server.py                     # FastAPI REST server
-│   └── schemas.py                    # API data models
-├── tests/
-│   ├── test_carla_connection.py
-│   ├── test_yolo_detection.py
-│   └── test_api.py
-├── config/
-│   ├── carla_config.yaml             # CARLA settings
-│   ├── yolo_config.yaml              # YOLO model settings
-│   └── intersection_config.yaml      # Intersection layout (ROIs, lanes)
-├── scripts/
-│   ├── run_local.sh                  # Run locally (if CARLA installed)
-│   ├── setup_runpod.sh               # Setup RunPod instance
-│   └── generate_dataset.py           # Collect CARLA images for YOLO training
-├── docs/
-│   ├── RUNPOD_SETUP.md               # Complete RunPod guide
-│   ├── API_SPEC.md                   # API documentation for Team A
-│   └── TROUBLESHOOTING.md            # Common issues
-├── requirements.txt
-├── .gitignore
-└── README.md
-```
+### New to this project?
+👉 **Read:** [`🎯_קרא_אותי_ראשון.md`](🎯_קרא_אותי_ראשון.md)
 
-## Quick Start (RunPod)
+### Ready to deploy?
+👉 **Follow:** [`SIMPLE_DEPLOY.md`](SIMPLE_DEPLOY.md) - Deploy in 3 steps (~28 minutes)
 
-### Step 1: Prepare Your Code
+---
+
+## 📚 Documentation
+
+| Document | Description | When to Read |
+|----------|-------------|--------------|
+| **🎯_קרא_אותי_ראשון.md** | Overview & quick start | Start here! |
+| **SIMPLE_DEPLOY.md** | Deploy to RunPod (recommended) | Ready to deploy |
+| **BUILD_AND_DEPLOY.md** | Build locally & push | Alternative approach |
+| **GET_STARTED.md** | Quick reference commands | Need a reminder |
+| **PROJECT_SUMMARY.md** | Complete file overview | Want to understand structure |
+| **ARCHITECTURE.md** | System architecture | Deep dive into design |
+| **TEAM_A_INTEGRATION.md** | API guide for Team A | Integrating with RL agent |
+
+---
+
+## ⚡ Quick Start
+
 ```bash
-git init
-git add .
-git commit -m "Initial Team B setup"
+# 1. Clone & Push to GitHub
+git clone <this-repo>
+cd intelligent-semaphore
+git remote add origin https://github.com/[YOU]/intelligent-semaphore.git
+git push -u origin main
+
+# 2. Deploy on RunPod
+# - Go to runpod.io
+# - Deploy RTX 3090, expose ports: 2000, 8000, 6080
+
+# 3. Build on server
+git clone https://github.com/[YOU]/intelligent-semaphore.git
+cd intelligent-semaphore
+bash scripts/setup_runpod_simple.sh
+
+# 4. Run
+docker run -d --name carla-system --gpus all --restart unless-stopped \
+  -p 2000:2000 -p 8000:8000 -p 6080:6080 \
+  intelligent-traffic-teamb:latest
 ```
 
-### Step 2: Deploy to RunPod
-See `docs/RUNPOD_SETUP.md` for detailed instructions.
+**Access:**
+- noVNC: `https://[pod-id]-6080.proxy.runpod.net`
+- API: `https://[pod-id]-8000.proxy.runpod.net/docs`
 
-### Step 3: Access the System
-- **VNC/noVNC**: `https://[your-pod-id]-6080.proxy.runpod.net`
-- **API Endpoint**: `https://[your-pod-id]-8000.proxy.runpod.net`
+---
 
-## The Interface Contract (with Team A)
+## 🏗️ What's Inside
 
-### Observation (S): Vehicle counts per lane
+```
+intelligent-semaphore/
+├── 📂 carla_integration/     # CARLA client & camera management
+├── 📂 yolo_detection/        # Vehicle detection with YOLO
+├── 📂 sensing_pipeline/      # ROI mapping & observation builder
+├── 📂 api/                   # REST API for RL agents
+├── 📂 config/                # Configuration files
+├── 📂 docker/                # Dockerfile & entrypoint
+├── 📂 scripts/               # Setup & utility scripts
+├── 📂 docs/                  # Detailed documentation
+└── 📂 tests/                 # Test files
+```
+
+---
+
+## 🔧 System Requirements
+
+### For Deployment (RunPod):
+- GPU: RTX 3090 or better
+- RAM: 16GB+
+- Storage: 60GB+
+- OS: Ubuntu 18.04+ (handled by Docker)
+
+### For Local Development (optional):
+- Docker Desktop
+- 30GB free disk space
+- Internet connection
+
+---
+
+## 🚀 Features
+
+- ✅ **CARLA 0.9.15** - High-fidelity traffic simulation
+- ✅ **YOLOv8** - Real-time vehicle detection
+- ✅ **ROI Mapping** - Lane-based vehicle counting
+- ✅ **REST API** - Easy integration with RL agents
+- ✅ **VNC Access** - Remote visualization
+- ✅ **GPU Accelerated** - Fast inference
+- ✅ **Docker** - One-command deployment
+
+---
+
+## 📊 API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/reset` | POST | Reset environment |
+| `/step` | POST | Execute action, get observation |
+| `/health` | GET | System health check |
+| `/camera/stream` | GET | Live camera feed |
+| `/docs` | GET | Interactive API documentation |
+
+**Full API docs:** [`docs/API_SPEC.md`](docs/API_SPEC.md)
+
+---
+
+## 🤝 For Team A (RL Agent)
+
+Your PPO agent can connect to this system via the REST API.
+
+**Read:** [`TEAM_A_INTEGRATION.md`](TEAM_A_INTEGRATION.md)
+
+**Quick example:**
 ```python
-{
-  "observation": [3, 5, 2, 4, 1, 0, 3, 2],  # 8 lanes example
-  "timestamp": 1234567890.123,
-  "frame_id": 1523
-}
+import requests
+
+API_URL = "https://your-pod-8000.proxy.runpod.net"
+
+# Reset environment
+response = requests.post(f"{API_URL}/reset")
+observation = response.json()
+
+# Execute action
+action = {"phase": 0, "duration": 30}
+response = requests.post(f"{API_URL}/step", json=action)
+next_obs, reward, done, info = response.json()
 ```
 
-### Action (A): Traffic light phase
-```python
-{
-  "action": 2,  # Integer representing traffic light phase
-  "duration": 10.0  # Optional: how long to keep this phase
-}
-```
+---
 
-## Technologies Used
+## 💰 Cost Estimate
 
-- **CARLA 0.9.15**: Autonomous driving simulator
-- **YOLOv8/v10**: Real-time object detection (Ultralytics)
-- **Python 3.10**: Main programming language
-- **FastAPI**: REST API framework
-- **OpenCV**: Image processing
-- **Docker**: Containerization
-- **TigerVNC + noVNC**: Remote visualization
+| Component | Cost |
+|-----------|------|
+| Setup (1 time) | ~$0.11 |
+| Running (per hour) | $0.34 |
+| 10 hours of training | $3.51 |
 
-## Development Workflow
+**Tip:** Stop the pod when not in use!
 
-1. **Local Development** (if you have CARLA installed locally)
-2. **Cloud Deployment** (RunPod with GPU)
-3. **Integration Testing** (Connect with Team A's PPO agent)
-4. **Fine-tuning** (Optimize YOLO and ROI mappings)
+---
 
-## Next Steps
+## 🐛 Troubleshooting
 
-1. Read `docs/RUNPOD_SETUP.md` for complete RunPod deployment guide
-2. Customize `config/intersection_config.yaml` for your specific intersection
-3. Generate YOLO training dataset: `python scripts/generate_dataset.py`
-4. Start the system: Container automatically runs all services
-5. Test API: See `docs/API_SPEC.md`
+**Common issues:**
 
-## Team Coordination
+1. **Container not starting**
+   ```bash
+   docker logs carla-system
+   ```
 
-- **Your responsibility**: Provide accurate vehicle counts per lane via API
-- **Team A's responsibility**: Consume observations, train PPO, return actions
-- **Interface**: REST API (see `docs/API_SPEC.md`)
+2. **GPU not detected**
+   ```bash
+   docker exec carla-system nvidia-smi
+   ```
 
-## Support
+3. **Port already in use**
+   ```bash
+   netstat -tlnp | grep 2000
+   ```
 
-For issues and troubleshooting, see `docs/TROUBLESHOOTING.md`.
+**Full troubleshooting guide:** [`docs/TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md)
+
+---
+
+## 📝 License
+
+This project is part of an academic research project on intelligent traffic control.
+
+---
+
+## 🙏 Acknowledgments
+
+- **CARLA Simulator** - https://carla.org
+- **Ultralytics YOLO** - https://ultralytics.com
+- **FastAPI** - https://fastapi.tiangolo.com
+- **RunPod** - https://runpod.io
+
+---
+
+## 📧 Contact
+
+For questions or issues, please open a GitHub issue or contact the team.
+
+---
+
+**Ready to start? → [`SIMPLE_DEPLOY.md`](SIMPLE_DEPLOY.md)** 🚀

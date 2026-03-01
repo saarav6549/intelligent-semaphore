@@ -1,0 +1,65 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+
+# Docker
+.dockerignore
+Dockerfile
+docker-compose*.yml
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Test
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Documentation (no need in container)
+*.md
+docs/
+
+# Scripts (already copied)
+scripts/setup_windows.ps1
+scripts/build_local.ps1
+scripts/build_local.sh
+scripts/push_image.ps1
+scripts/push_image.sh
+scripts/test_local.sh
+scripts/run_on_server.sh
+
+# Large files
+datasets/
+runs/
+models/*.pt
+*.pth
+*.onnx
+
+# Temporary
+tmp/
+temp/
+*.tmp

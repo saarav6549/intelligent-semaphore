@@ -1,5 +1,5 @@
 """
-Vehicle Detector using YOLO
+Vehicle Detector using YOLO (ultralytics)
 """
 
 import cv2

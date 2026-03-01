@@ -5,10 +5,12 @@ FROM carlasim/carla:0.9.15
 
 USER root
 
+# Prevent interactive prompts during package installation
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=Etc/UTC
+
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
-    python3-pip \
-    python3-dev \
     wget \
     curl \
     git \
@@ -20,17 +22,27 @@ RUN apt-get update && apt-get install -y \
     net-tools \
     novnc \
     websockify \
+    software-properties-common \
     && rm -rf /var/lib/apt/lists/*
 
-# Set up Python environment
-RUN pip3 install --upgrade pip setuptools wheel
+# Install Python 3.8 (CARLA comes with 3.7, but we need newer for packages)
+RUN add-apt-repository ppa:deadsnakes/ppa && \
+    apt-get update && \
+    apt-get install -y python3.8 python3.8-dev python3.8-distutils python3.8-venv && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install pip for Python 3.8
+RUN curl -sS https://bootstrap.pypa.io/pip/3.8/get-pip.py | python3.8
 
 # Copy requirements and install Python packages
 COPY requirements.txt /tmp/requirements.txt
-RUN pip3 install -r /tmp/requirements.txt
+RUN python3.8 -m pip install -r /tmp/requirements.txt
+
+# Install CARLA Python client for Python 3.8
+RUN python3.8 -m pip install carla==0.9.13
 
 # Install additional tools
-RUN pip3 install loguru
+RUN python3.8 -m pip install loguru
 
 # Create workspace directory
 WORKDIR /workspace
@@ -64,7 +76,7 @@ RUN chmod +x /entrypoint.sh
 # Set environment variables
 ENV DISPLAY=:99
 ENV CARLA_ROOT=/home/carla
-ENV PYTHONPATH="${PYTHONPATH}:/home/carla/PythonAPI/carla/dist/carla-0.9.15-py3.7-linux-x86_64.egg"
+ENV PYTHONPATH=/home/carla/PythonAPI/carla:/workspace
 
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["all"]
