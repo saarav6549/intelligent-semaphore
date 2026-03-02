@@ -10,6 +10,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=Etc/UTC
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1
 ENV PIP_DEFAULT_TIMEOUT=600
+ENV PIP_PROGRESS_BAR=off
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -49,7 +50,7 @@ COPY requirements.txt /tmp/requirements.txt
 RUN set -e; \
     for i in 1 2 3 4 5; do \
       echo "pip install attempt $i/5"; \
-      python3.8 -m pip install --retries 10 --timeout 600 -r /tmp/requirements.txt && exit 0; \
+      python3.8 -m pip install --retries 10 --timeout 600 --progress-bar off -r /tmp/requirements.txt && exit 0; \
       echo "pip install failed; retrying in 30s..." >&2; \
       sleep 30; \
     done; \

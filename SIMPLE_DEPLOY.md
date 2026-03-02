@@ -93,6 +93,38 @@ docker logs -f carla-system
 
 ---
 
+## ✅ Alternative: RunPod WITHOUT docker (no Docker-in-Docker)
+
+Some RunPod templates are already “a container”, and **do not include the `docker` CLI/daemon**.
+In that case, you can still run everything by using a **CARLA-based pod image** and installing the repo dependencies directly.
+
+### Step A: Create the Pod with a CARLA base image
+- Set the Pod container image to `carlasim/carla:0.9.15` (or any image that already contains `/home/carla/CarlaUE4.sh`)
+- Expose ports: `2000, 8000, 6080` (optional: `5900`)
+
+### Step B: Use tmux so SSH disconnects won’t stop the setup
+
+```bash
+apt-get update && apt-get install -y tmux
+tmux new -s setup
+```
+
+### Step C: Clone + run the no-docker setup script
+
+```bash
+git clone https://github.com/[YOUR_USERNAME]/intelligent-semaphore.git
+cd intelligent-semaphore
+bash scripts/runpod_no_docker.sh
+```
+
+If your SSH disconnects, reconnect and run:
+
+```bash
+tmux attach -t setup
+```
+
+---
+
 ## 🌐 גש למערכת
 
 קבל את ה-Pod ID מ-RunPod dashboard, אז:
