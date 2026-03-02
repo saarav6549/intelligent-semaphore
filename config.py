@@ -16,9 +16,32 @@ class Config:
     """Centralized configuration manager"""
     
     def __init__(self):
+        self._load_dotenv()
         self.carla = self._load_yaml("carla_config.yaml")
         self.yolo = self._load_yaml("yolo_config.yaml")
         self.intersection = self._load_yaml("intersection_config.yaml")
+        self._apply_env_overrides()
+    
+    def _load_dotenv(self) -> None:
+        """
+        Load a local .env file if present (minimal parser).
+        This enables easy overrides without editing YAML.
+        """
+        env_path = PROJECT_ROOT / ".env"
+        if not env_path.exists():
+            return
+        
+        for raw_line in env_path.read_text(encoding="utf-8", errors="ignore").splitlines():
+            line = raw_line.strip()
+            if not line or line.startswith("#"):
+                continue
+            if "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            key = key.strip()
+            value = value.strip().strip('"').strip("'")
+            if key:
+                os.environ.setdefault(key, value)
         
     def _load_yaml(self, filename: str) -> Dict[str, Any]:
         """Load YAML configuration file"""
@@ -28,6 +51,27 @@ class Config:
         
         with open(filepath, 'r') as f:
             return yaml.safe_load(f)
+
+    def _apply_env_overrides(self) -> None:
+        """Override YAML configs from environment variables when provided."""
+        carla_cfg = self.carla.setdefault("carla", {})
+        
+        if os.getenv("CARLA_HOST"):
+            carla_cfg["host"] = os.environ["CARLA_HOST"]
+        if os.getenv("CARLA_PORT"):
+            carla_cfg["port"] = int(os.environ["CARLA_PORT"])
+        if os.getenv("CARLA_TIMEOUT"):
+            carla_cfg["timeout"] = float(os.environ["CARLA_TIMEOUT"])
+        if os.getenv("CARLA_MAP_NAME"):
+            carla_cfg["map_name"] = os.environ["CARLA_MAP_NAME"]
+        
+        yolo_cfg = self.yolo.setdefault("yolo", {})
+        if os.getenv("YOLO_MODEL"):
+            yolo_cfg["weights"] = os.environ["YOLO_MODEL"]
+        if os.getenv("YOLO_DEVICE"):
+            yolo_cfg["device"] = os.environ["YOLO_DEVICE"]
+        if os.getenv("YOLO_CONFIDENCE"):
+            yolo_cfg.setdefault("detection", {})["confidence_threshold"] = float(os.environ["YOLO_CONFIDENCE"])
     
     @property
     def num_lanes(self) -> int:

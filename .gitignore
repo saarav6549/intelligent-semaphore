@@ -72,6 +72,15 @@ datasets/
 runs/
 experiments/
 
+# Huge archives / artifacts (never commit)
+*.tar
+*.tar.gz
+*.tgz
+*.zip
+*.7z
+*.rar
+*.iso
+
 # Models (large files)
 models/*.pt
 models/*.pth
@@ -91,6 +100,8 @@ docker-volumes/
 
 # RunPod specific
 runpod_data/
+*.ssh.runpod
+root@*.ssh.*
 
 # Build artifacts
 *.egg

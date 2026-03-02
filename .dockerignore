@@ -58,6 +58,15 @@ runs/
 models/*.pt
 *.pth
 *.onnx
+*.tar
+*.tar.gz
+*.tgz
+*.zip
+*.7z
+*.rar
+*.iso
+root@*.ssh.*
+*.ssh.runpod
 
 # Temporary
 tmp/

@@ -1,9 +1,15 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
 echo "================================================"
 echo "   Intelligent Traffic Light - Team B System   "
 echo "================================================"
+
+# Cleanup on exit
+cleanup() {
+  kill "${XVFB_PID:-}" "${VNC_PID:-}" 2>/dev/null || true
+}
+trap cleanup EXIT
 
 # Start Xvfb (virtual display)
 echo "Starting virtual display..."
@@ -32,14 +38,45 @@ echo "  - VNC: port 5900 (password: 1234)"
 echo "  - noVNC: port 6080 (web browser)"
 echo ""
 
+# Ensure logs directory exists and is writable for `carla`
+mkdir -p /workspace/logs
+chown -R carla:carla /workspace/logs 2>/dev/null || true
+
 # Determine what to run
 MODE=${1:-all}
+
+CARLA_FLAGS=(
+  -RenderOffScreen
+  -carla-rpc-port=2000
+  -nosound
+  -stdout
+  -FullStdOutLogOutput
+  -log
+)
+
+# On some environments (notably Docker Desktop/WSL2), NVIDIA "graphics" driver
+# libraries are not available inside containers. CARLA then exits instantly with
+# Vulkan/GLX loader errors. We detect this and fail fast with a clear message.
+if ! ldconfig -p 2>/dev/null | grep -q 'libGLX_nvidia.so.0'; then
+  echo ""
+  echo "WARNING: NVIDIA graphics libraries (libGLX_nvidia.so.0) not found in container."
+  echo "CARLA requires Vulkan/OpenGL user-mode driver libs to start."
+  echo ""
+  echo "If you are running on Docker Desktop/WSL2 (Windows), GPU compute may work (nvidia-smi)"
+  echo "but graphics libs often are not exposed to Linux containers."
+  echo ""
+  echo "Recommended: run this image on a Linux host with NVIDIA drivers (e.g., RunPod)."
+  echo "If you still want to try locally, ensure you run with:"
+  echo "  -e NVIDIA_VISIBLE_DEVICES=all -e NVIDIA_DRIVER_CAPABILITIES=all"
+  echo ""
+fi
 
 case $MODE in
   carla)
     echo "Starting CARLA server only..."
     cd /home/carla
-    ./CarlaUE4.sh -RenderOffScreen -carla-rpc-port=2000
+    # CARLA refuses root; run as built-in `carla` user (preserve env like DISPLAY)
+    su -p carla -s /bin/bash -c "cd /home/carla && ./CarlaUE4.sh ${CARLA_FLAGS[*]}" 2>&1 | tee -a /workspace/logs/carla.log
     ;;
     
   api)
@@ -51,7 +88,8 @@ case $MODE in
   all)
     echo "Starting CARLA server..."
     cd /home/carla
-    ./CarlaUE4.sh -RenderOffScreen -carla-rpc-port=2000 &
+    # Run CARLA as `carla` with headless-friendly flags; keep logs in docker logs + file
+    (su -p carla -s /bin/bash -c "cd /home/carla && ./CarlaUE4.sh ${CARLA_FLAGS[*]}" 2>&1 | tee -a /workspace/logs/carla.log) &
     CARLA_PID=$!
     
     echo "Waiting for CARLA to start (30 seconds)..."
@@ -89,6 +127,3 @@ case $MODE in
     exit 1
     ;;
 esac
-
-# Cleanup on exit
-trap "kill $XVFB_PID $VNC_PID 2>/dev/null" EXIT

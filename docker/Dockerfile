@@ -8,6 +8,8 @@ USER root
 # Prevent interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=Etc/UTC
+ENV PIP_DISABLE_PIP_VERSION_CHECK=1
+ENV PIP_DEFAULT_TIMEOUT=600
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -23,6 +25,11 @@ RUN apt-get update && apt-get install -y \
     novnc \
     websockify \
     software-properties-common \
+    xdg-user-dirs \
+    iproute2 \
+    libvulkan1 \
+    vulkan-utils \
+    mesa-utils \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python 3.8 (CARLA comes with 3.7, but we need newer for packages)
@@ -34,9 +41,20 @@ RUN add-apt-repository ppa:deadsnakes/ppa && \
 # Install pip for Python 3.8
 RUN curl -sS https://bootstrap.pypa.io/pip/3.8/get-pip.py | python3.8
 
+# Upgrade pip tooling (helps with large wheels)
+RUN python3.8 -m pip install --upgrade pip setuptools wheel
+
 # Copy requirements and install Python packages
 COPY requirements.txt /tmp/requirements.txt
-RUN python3.8 -m pip install -r /tmp/requirements.txt
+RUN set -e; \
+    for i in 1 2 3 4 5; do \
+      echo "pip install attempt $i/5"; \
+      python3.8 -m pip install --retries 10 --timeout 600 -r /tmp/requirements.txt && exit 0; \
+      echo "pip install failed; retrying in 30s..." >&2; \
+      sleep 30; \
+    done; \
+    echo "pip install failed after 5 attempts" >&2; \
+    exit 1
 
 # Install CARLA Python client for Python 3.8
 RUN python3.8 -m pip install carla==0.9.13
@@ -69,14 +87,24 @@ RUN mkdir -p ~/.vnc && \
 # 6080: noVNC (Web VNC)
 EXPOSE 2000 2001 2002 8000 5900 6080
 
-# Copy entrypoint script
+# Copy entrypoint script and fix line endings
 COPY docker/entrypoint.sh /entrypoint.sh
+RUN dos2unix /entrypoint.sh 2>/dev/null || sed -i 's/\r$//' /entrypoint.sh
 RUN chmod +x /entrypoint.sh
+
+# Ensure workspace is writable by the built-in `carla` user (uid 1000 in base image)
+RUN chown -R carla:carla /workspace && \
+    mkdir -p /workspace/logs && \
+    chown -R carla:carla /workspace/logs
 
 # Set environment variables
 ENV DISPLAY=:99
 ENV CARLA_ROOT=/home/carla
 ENV PYTHONPATH=/home/carla/PythonAPI/carla:/workspace
+
+# NVIDIA Container Toolkit: we need graphics libs for Vulkan/OpenGL (CARLA offscreen rendering)
+ENV NVIDIA_VISIBLE_DEVICES=all
+ENV NVIDIA_DRIVER_CAPABILITIES=all
 
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["all"]

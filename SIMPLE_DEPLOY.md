@@ -79,6 +79,8 @@ bash scripts/setup_runpod_simple.sh
 docker run -d \
     --name carla-system \
     --gpus all \
+    -e NVIDIA_VISIBLE_DEVICES=all \
+    -e NVIDIA_DRIVER_CAPABILITIES=all \
     --restart unless-stopped \
     -p 2000:2000 \
     -p 8000:8000 \
@@ -129,7 +131,9 @@ git pull
 docker stop carla-system
 docker rm carla-system
 docker build -t intelligent-traffic-teamb:latest -f docker/Dockerfile .
-docker run -d --name carla-system --gpus all --restart unless-stopped \
+docker run -d --name carla-system --gpus all \
+  -e NVIDIA_VISIBLE_DEVICES=all -e NVIDIA_DRIVER_CAPABILITIES=all \
+  --restart unless-stopped \
   -p 2000:2000 -p 8000:8000 -p 6080:6080 \
   intelligent-traffic-teamb:latest
 ```

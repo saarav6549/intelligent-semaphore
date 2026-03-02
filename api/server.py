@@ -13,6 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import numpy as np
 import cv2
 from loguru import logger
+from typing import Optional
 
 PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.append(str(PROJECT_ROOT))
@@ -69,7 +70,8 @@ async def startup_event():
         logger.info("Initializing CARLA client...")
         system.carla_client = CarlaClient(
             host=config.carla['carla']['host'],
-            port=config.carla['carla']['port']
+            port=config.carla['carla']['port'],
+            timeout=config.carla['carla'].get('timeout', 10.0)
         )
         
         if not system.carla_client.connect():
@@ -77,9 +79,10 @@ async def startup_event():
             return
         
         system.carla_client.load_map(config.carla['carla']['map_name'])
-        system.carla_client.setup_synchronous_mode(
-            config.carla['carla']['synchronous_mode']
-        )
+        if config.carla['carla'].get('synchronous_mode', True):
+            system.carla_client.setup_synchronous_mode(
+                config.carla['carla'].get('fixed_delta_seconds', 0.05)
+            )
         
         weather = config.carla['carla']['weather']
         system.carla_client.set_weather(
