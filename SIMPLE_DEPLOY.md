@@ -99,7 +99,12 @@ Some RunPod templates are already “a container”, and **do not include the `d
 In that case, you can still run everything by using a **CARLA-based pod image** and installing the repo dependencies directly.
 
 ### Step A: Create the Pod with a CARLA base image
-- Set the Pod container image to `carlasim/carla:0.9.15` (or any image that already contains `/home/carla/CarlaUE4.sh`)
+- Recommended: use a root-enabled CARLA image so `apt-get` works:
+  - Build/push once (from your machine): `docker/Dockerfile.carla_root` → `saarav/carla-root:0.9.15`
+  - Then set the Pod container image to `saarav/carla-root:0.9.15`
+
+- If you already have root access on your pod, you can also use:
+  - `carlasim/carla:0.9.15` (contains `/home/carla/CarlaUE4.sh`)
 - Expose ports: `2000, 8000, 6080` (optional: `5900`)
 
 ### Step B: Use tmux so SSH disconnects won’t stop the setup
