@@ -8,7 +8,7 @@ import time
 import asyncio
 from pathlib import Path
 from fastapi import FastAPI, HTTPException, BackgroundTasks
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 import numpy as np
 import cv2
@@ -18,6 +18,7 @@ from typing import Optional
 PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.append(str(PROJECT_ROOT))
 
+import carla
 from config import config
 from carla_integration import CarlaClient, CameraManager, TrafficLightController
 from yolo_detection import VehicleDetector, ROIMapper
@@ -100,7 +101,18 @@ async def startup_event():
         
         logger.info("Setting up traffic light controller...")
         system.traffic_controller = TrafficLightController(system.carla_client.world)
-        system.traffic_controller.find_intersection_lights()
+        num_lights = system.traffic_controller.find_intersection_lights()
+        if num_lights == 0:
+            center = system.traffic_controller.get_intersection_center(height=25.0)
+            if center is not None:
+                logger.info(f"Auto-moving camera to intersection at ({center[0]:.1f}, {center[1]:.1f})")
+                system.traffic_controller.intersection_location = carla.Location(
+                    center[0], center[1], center[2]
+                )
+                system.traffic_controller.find_intersection_lights(radius=50.0)
+                system.camera_manager.set_camera_position(
+                    "intersection_overhead", center[0], center[1], center[2]
+                )
         system.traffic_controller.freeze_lights()
         
         logger.info("Spawning vehicles...")
@@ -302,6 +314,107 @@ async def set_camera_position(req: CameraPositionRequest):
         raise HTTPException(status_code=400, detail=str(e))
 
 
+@app.post("/camera/move-to-intersection", tags=["Visualization"])
+async def move_camera_to_intersection():
+    """Move overhead camera to center of traffic light intersection."""
+    if not system.initialized:
+        raise HTTPException(status_code=503, detail="System not initialized")
+    center = system.traffic_controller.get_intersection_center(height=25.0)
+    if center is None:
+        raise HTTPException(
+            status_code=404,
+            detail="No traffic lights found - cannot determine intersection"
+        )
+    try:
+        system.traffic_controller.intersection_location = carla.Location(
+            center[0], center[1], center[2]
+        )
+        system.traffic_controller.find_intersection_lights(radius=50.0)
+        system.camera_manager.set_camera_position(
+            "intersection_overhead", center[0], center[1], center[2]
+        )
+        return {
+            "status": "success",
+            "x": center[0], "y": center[1], "z": center[2],
+            "traffic_lights_found": len(system.traffic_controller.traffic_lights)
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.get("/camera", response_class=HTMLResponse, tags=["Visualization"])
+async def camera_dashboard():
+    """Camera dashboard with stream and controls."""
+    return """
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מצלמת צומת - Intelligent Traffic</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; padding: 16px; font-family: 'Segoe UI', sans-serif; background: #1a1a2e; color: #eee; }
+        h1 { margin: 0 0 16px; font-size: 1.5rem; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .stream-wrap { position: relative; background: #000; border-radius: 8px; overflow: hidden; margin-bottom: 16px; }
+        .stream-wrap img { display: block; width: 100%; max-height: 80vh; object-fit: contain; }
+        .controls { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+        .btn {
+            padding: 12px 24px; font-size: 1rem; font-weight: 600; border: none; border-radius: 8px;
+            cursor: pointer; transition: all 0.2s;
+        }
+        .btn-primary { background: #4ade80; color: #0f172a; }
+        .btn-primary:hover { background: #22c55e; transform: translateY(-1px); }
+        .btn-primary:disabled { background: #64748b; cursor: not-allowed; transform: none; }
+        .status { padding: 8px 12px; border-radius: 6px; font-size: 0.9rem; }
+        .status.ok { background: #166534; color: #bbf7d0; }
+        .status.err { background: #991b1b; color: #fecaca; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>מצלמת צומת</h1>
+        <div class="stream-wrap">
+            <img src="/camera/stream" alt="Camera stream" id="stream">
+        </div>
+        <div class="controls">
+            <button class="btn btn-primary" id="moveBtn" onclick="moveToIntersection()">
+                הזז מצלמה לצומת מרומזר
+            </button>
+            <span class="status" id="status"></span>
+        </div>
+    </div>
+    <script>
+        const base = window.location.origin;
+        async function moveToIntersection() {
+            const btn = document.getElementById('moveBtn');
+            const status = document.getElementById('status');
+            btn.disabled = true;
+            status.textContent = 'מעביר...';
+            status.className = 'status';
+            try {
+                const r = await fetch(base + '/camera/move-to-intersection', { method: 'POST' });
+                const j = await r.json();
+                if (r.ok) {
+                    status.textContent = 'המצלמה הוזזה לצומת';
+                    status.className = 'status ok';
+                } else {
+                    status.textContent = j.detail || 'שגיאה';
+                    status.className = 'status err';
+                }
+            } catch (e) {
+                status.textContent = 'שגיאת רשת';
+                status.className = 'status err';
+            }
+            btn.disabled = false;
+        }
+    </script>
+</body>
+</html>
+"""
+
+
 @app.get("/camera/stream", tags=["Visualization"])
 async def camera_stream():
     """
@@ -318,11 +431,14 @@ async def camera_stream():
                 image = system.camera_manager.get_latest_image("intersection_overhead", timeout=1.0)
                 
                 if image is not None:
-                    # Lower confidence (0.3) for stream so more vehicles visible from overhead
+                    # Lower confidence (0.2) for stream - overhead view needs lower threshold
                     detections, annotated = system.detector.detect(
-                        image, visualize=True, conf_override=0.3
+                        image, visualize=True, conf_override=0.2
                     )
-                    vis_image = system.roi_mapper.visualize_rois(annotated, detections)
+                    at_intersection = len(system.traffic_controller.traffic_lights) > 0
+                    vis_image = system.roi_mapper.visualize_rois(
+                        annotated, detections, show_rois=at_intersection
+                    )
                     
                     # Overlay camera position (x, y, z) below YOLO label
                     pos = system.camera_manager.get_camera_position("intersection_overhead")
@@ -331,6 +447,13 @@ async def camera_stream():
                         cv2.putText(
                             vis_image, text, (10, 75),
                             cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 255), 2, cv2.LINE_AA
+                        )
+                    # Hint when not at intersection
+                    if not at_intersection:
+                        hint = "Open /camera -> Click 'Move to intersection'"
+                        cv2.putText(
+                            vis_image, hint, (10, 110),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 165, 255), 2, cv2.LINE_AA
                         )
                     
                     _, buffer = cv2.imencode('.jpg', vis_image, [cv2.IMWRITE_JPEG_QUALITY, 85])

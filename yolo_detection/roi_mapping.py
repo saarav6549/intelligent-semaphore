@@ -99,18 +99,27 @@ class ROIMapper:
         counts = np.array([len(lane_detections[i]) for i in range(self.num_lanes)], dtype=np.int32)
         return counts
     
-    def visualize_rois(self, image: np.ndarray, detections: List = None) -> np.ndarray:
+    def visualize_rois(
+        self,
+        image: np.ndarray,
+        detections: List = None,
+        show_rois: bool = True
+    ) -> np.ndarray:
         """
         Draw ROIs on image for debugging
         
         Args:
             image: Input image
             detections: Optional list of detections to show mapping
+            show_rois: If False, skip drawing ROIs (use when camera not at intersection)
             
         Returns:
-            Image with ROIs drawn
+            Image with ROIs drawn (or original if show_rois=False)
         """
         result_image = image.copy()
+        
+        if not show_rois:
+            return result_image
         
         colors = [
             (255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0),

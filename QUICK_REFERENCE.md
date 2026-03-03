@@ -6,7 +6,8 @@
 |---------|-----|---------|
 | API | `https://[pod-id]-8000.proxy.runpod.net` | REST API |
 | API Docs | `https://[pod-id]-8000.proxy.runpod.net/docs` | Interactive docs |
-| Camera Stream | `https://[pod-id]-8000.proxy.runpod.net/camera/stream` | Live camera |
+| Camera Dashboard | `https://[pod-id]-8000.proxy.runpod.net/camera` | Stream + כפתור "הזז לצומת" |
+| Camera Stream | `https://[pod-id]-8000.proxy.runpod.net/camera/stream` | Live camera only |
 | noVNC | `https://[pod-id]-6080.proxy.runpod.net` | CARLA visualization |
 
 ---

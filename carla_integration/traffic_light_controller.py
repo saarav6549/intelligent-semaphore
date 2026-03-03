@@ -95,6 +95,31 @@ class TrafficLightController:
             light.freeze(False)
         logger.info("Traffic lights unfrozen")
     
+    def get_intersection_center(self, height: float = 25.0) -> Optional[tuple]:
+        """
+        Get center of intersection from traffic lights (centroid).
+        Searches all traffic lights in the world - useful when default (0,0,0) has none.
+        
+        Args:
+            height: Z coordinate for overhead camera (meters above ground)
+            
+        Returns:
+            (x, y, z) tuple or None if no traffic lights found
+        """
+        all_actors = self.world.get_actors()
+        traffic_lights = list(all_actors.filter('traffic.traffic_light*'))
+        if not traffic_lights:
+            logger.warning("No traffic lights found in world")
+            return None
+        xs = [tl.get_location().x for tl in traffic_lights]
+        ys = [tl.get_location().y for tl in traffic_lights]
+        zs = [tl.get_location().z for tl in traffic_lights]
+        cx = sum(xs) / len(xs)
+        cy = sum(ys) / len(ys)
+        cz = sum(zs) / len(zs)
+        logger.info(f"Intersection center from {len(traffic_lights)} lights: ({cx:.1f}, {cy:.1f}, {cz:.1f})")
+        return (cx, cy, height)
+    
     def get_light_states(self) -> List[str]:
         """
         Get current state of all lights
