@@ -67,20 +67,27 @@ class VehicleDetector:
             7: "truck"
         }
     
-    def detect(self, image: np.ndarray, visualize: bool = False) -> Tuple[List[Detection], Optional[np.ndarray]]:
+    def detect(
+        self,
+        image: np.ndarray,
+        visualize: bool = False,
+        conf_override: Optional[float] = None
+    ) -> Tuple[List[Detection], Optional[np.ndarray]]:
         """
         Detect vehicles in image
         
         Args:
             image: Input image as numpy array (H, W, 3)
-            visualize: If True, return annotated image
+            visualize: If True, return annotated image with boxes
+            conf_override: Optional lower confidence for display (see more detections)
             
         Returns:
             Tuple of (detections list, annotated image or None)
         """
+        conf = conf_override if conf_override is not None else self.confidence_threshold
         results = self.model.predict(
             image,
-            conf=self.confidence_threshold,
+            conf=conf,
             iou=self.iou_threshold,
             classes=self.target_classes,
             verbose=False,
@@ -108,7 +115,7 @@ class VehicleDetector:
                 detections.append(detection)
         
         annotated_image = None
-        if visualize and len(detections) > 0:
+        if visualize:
             annotated_image = self._draw_detections(image.copy(), detections)
         
         return detections, annotated_image
@@ -134,8 +141,7 @@ class VehicleDetector:
         for det in detections:
             x1, y1, x2, y2 = det.bbox
             color = colors.get(det.class_id, (255, 255, 255))
-            
-            cv2.rectangle(image, (x1, y1), (x2, y2), color, 2)
+            cv2.rectangle(image, (x1, y1), (x2, y2), color, 3)
             
             label = f"{det.class_name} {det.confidence:.2f}"
             label_size, _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)
@@ -158,14 +164,13 @@ class VehicleDetector:
                 2
             )
         
+        # Prominent YOLO status (always visible)
+        label = f"YOLO: {len(detections)} vehicles"
+        cv2.rectangle(image, (5, 5), (320, 50), (0, 0, 0), -1)
+        cv2.rectangle(image, (5, 5), (320, 50), (0, 255, 0), 2)
         cv2.putText(
-            image,
-            f"Vehicles: {len(detections)}",
-            (10, 30),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            1.0,
-            (0, 255, 0),
-            2
+            image, label, (15, 38),
+            cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 255, 0), 2, cv2.LINE_AA
         )
         
         return image

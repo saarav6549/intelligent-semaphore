@@ -318,20 +318,19 @@ async def camera_stream():
                 image = system.camera_manager.get_latest_image("intersection_overhead", timeout=1.0)
                 
                 if image is not None:
-                    detections, annotated = system.detector.detect(image, visualize=True)
+                    # Lower confidence (0.3) for stream so more vehicles visible from overhead
+                    detections, annotated = system.detector.detect(
+                        image, visualize=True, conf_override=0.3
+                    )
+                    vis_image = system.roi_mapper.visualize_rois(annotated, detections)
                     
-                    if annotated is not None:
-                        vis_image = system.roi_mapper.visualize_rois(annotated, detections)
-                    else:
-                        vis_image = system.roi_mapper.visualize_rois(image)
-                    
-                    # Overlay camera position (x, y, z) on screen
+                    # Overlay camera position (x, y, z) below YOLO label
                     pos = system.camera_manager.get_camera_position("intersection_overhead")
                     if pos is not None:
                         text = f"Camera: x={pos[0]:.1f}  y={pos[1]:.1f}  z={pos[2]:.1f}"
                         cv2.putText(
-                            vis_image, text, (10, 35),
-                            cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 255, 0), 2, cv2.LINE_AA
+                            vis_image, text, (10, 75),
+                            cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 255), 2, cv2.LINE_AA
                         )
                     
                     _, buffer = cv2.imencode('.jpg', vis_image, [cv2.IMWRITE_JPEG_QUALITY, 85])
