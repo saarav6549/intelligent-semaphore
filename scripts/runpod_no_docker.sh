@@ -63,8 +63,26 @@ for i in 1 2 3 4 5; do
 done
 
 echo ""
-echo "Installing CARLA Python client for Python 3.8..."
-python3.8 -m pip install carla==0.9.13 loguru
+echo "Installing CARLA Python client for Python 3.8 (match simulator 0.9.15)..."
+# Prefer the wheel shipped with the CARLA package when available to avoid mismatches/segfaults.
+python3.8 -m pip uninstall -y carla >/dev/null 2>&1 || true
+
+CARLA_DIST_DIR="/home/carla/PythonAPI/carla/dist"
+CARLA_WHEEL=""
+if [[ -d "$CARLA_DIST_DIR" ]]; then
+  # Pick a cp38 wheel if present (e.g. carla-0.9.15-cp38-cp38-manylinux_2_27_x86_64.whl)
+  CARLA_WHEEL="$(ls -1 "$CARLA_DIST_DIR"/carla-0.9.15-cp38-*.whl 2>/dev/null | head -n 1 || true)"
+fi
+
+if [[ -n "$CARLA_WHEEL" ]]; then
+  echo "Using local CARLA wheel: $CARLA_WHEEL"
+  python3.8 -m pip install "$CARLA_WHEEL"
+else
+  echo "Local cp38 wheel not found; trying PyPI carla==0.9.15"
+  python3.8 -m pip install carla==0.9.15
+fi
+
+python3.8 -m pip install loguru
 
 echo ""
 echo "Preparing VNC/noVNC..."
