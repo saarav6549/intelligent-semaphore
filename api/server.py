@@ -93,26 +93,29 @@ async def startup_event():
             sun_altitude_angle=weather['sun_altitude_angle']
         )
         
-        logger.info("Setting up cameras...")
-        system.camera_manager = CameraManager(system.carla_client.world)
-        
-        for cam_config in config.intersection['intersection']['cameras']:
-            system.camera_manager.create_intersection_camera(cam_config)
-        
         logger.info("Setting up traffic light controller...")
         system.traffic_controller = TrafficLightController(system.carla_client.world)
         num_lights = system.traffic_controller.find_intersection_lights()
+        cam_position = None
         if num_lights == 0:
             center = system.traffic_controller.get_intersection_center(height=25.0)
             if center is not None:
-                logger.info(f"Auto-moving camera to intersection at ({center[0]:.1f}, {center[1]:.1f})")
+                cam_position = (center[0], center[1], center[2])
+                logger.info(f"Will spawn camera at intersection ({center[0]:.1f}, {center[1]:.1f})")
                 system.traffic_controller.intersection_location = carla.Location(
                     center[0], center[1], center[2]
                 )
                 system.traffic_controller.find_intersection_lights(radius=50.0)
-                system.camera_manager.set_camera_position(
-                    "intersection_overhead", center[0], center[1], center[2]
-                )
+        
+        logger.info("Setting up cameras...")
+        system.camera_manager = CameraManager(system.carla_client.world)
+        for cam_config in config.intersection['intersection']['cameras']:
+            cfg = dict(cam_config)
+            if cam_position is not None and cfg.get('name') == 'intersection_overhead':
+                cfg = dict(cfg)
+                cfg['position'] = {'x': cam_position[0], 'y': cam_position[1], 'z': cam_position[2]}
+            system.camera_manager.create_intersection_camera(cfg)
+        
         system.traffic_controller.freeze_lights()
         
         logger.info("Spawning vehicles...")
