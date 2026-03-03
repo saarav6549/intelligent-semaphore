@@ -135,5 +135,27 @@ set +e
 sleep 5
 
 cd "$REPO_ROOT"
-python3.8 -m uvicorn api.server:app --host 0.0.0.0 --port 8000
+
+API_HOST="${API_HOST:-0.0.0.0}"
+API_PORT="${API_PORT:-8000}"
+
+echo ""
+echo "Starting API on ${API_HOST}:${API_PORT}..."
+
+# If a previous run left uvicorn running, stop it so we can bind the port.
+if ss -lnt 2>/dev/null | grep -Eq "(:|\\])${API_PORT}[[:space:]]"; then
+  echo "Port ${API_PORT} is already in use. Attempting to stop existing API..."
+  pkill -f "uvicorn api.server:app" >/dev/null 2>&1 || true
+  pkill -f "python3.8 -m uvicorn api.server:app" >/dev/null 2>&1 || true
+  sleep 2
+fi
+
+if ss -lnt 2>/dev/null | grep -Eq "(:|\\])${API_PORT}[[:space:]]"; then
+  echo "ERROR: Port ${API_PORT} is still in use."
+  echo "Run: ss -lntp | grep :${API_PORT}  (or netstat -tlnp | grep :${API_PORT})"
+  echo "Then stop the process and rerun this script."
+  exit 1
+fi
+
+python3.8 -m uvicorn api.server:app --host "$API_HOST" --port "$API_PORT"
 
