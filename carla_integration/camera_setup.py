@@ -23,6 +23,7 @@ class CameraManager:
         self.cameras: Dict[str, carla.Actor] = {}
         self.image_queues: Dict[str, queue.Queue] = {}
         self.latest_images: Dict[str, np.ndarray] = {}
+        self.camera_positions: Dict[str, tuple] = {}  # camera_id -> (x, y, z)
         
     def create_camera(
         self,
@@ -71,6 +72,7 @@ class CameraManager:
             camera.listen(lambda image: self._on_image_received(camera_id, image))
             
             self.cameras[camera_id] = camera
+            self.camera_positions[camera_id] = position
             logger.success(f"Camera '{camera_id}' created at {position}")
             
             return camera
@@ -144,6 +146,37 @@ class CameraManager:
             fov=camera_config['fov']
         )
     
+    def set_camera_position(self, camera_id: str, x: float, y: float, z: float):
+        """
+        Move camera to new position (dynamic control).
+        
+        Args:
+            camera_id: Camera identifier
+            x, y, z: New position in meters
+        """
+        if camera_id not in self.cameras:
+            raise ValueError(f"Camera '{camera_id}' not found")
+        cam = self.cameras[camera_id]
+        if not cam.is_alive:
+            raise ValueError(f"Camera '{camera_id}' is not alive")
+        transform = cam.get_transform()
+        new_transform = carla.Transform(
+            carla.Location(x=float(x), y=float(y), z=float(z)),
+            transform.rotation
+        )
+        cam.set_transform(new_transform)
+        self.camera_positions[camera_id] = (x, y, z)
+        logger.info(f"Camera '{camera_id}' moved to ({x:.1f}, {y:.1f}, {z:.1f})")
+    
+    def get_camera_position(self, camera_id: str) -> Optional[tuple]:
+        """Get current camera position (x, y, z)."""
+        if camera_id in self.camera_positions:
+            return self.camera_positions[camera_id]
+        if camera_id in self.cameras and self.cameras[camera_id].is_alive:
+            loc = self.cameras[camera_id].get_transform().location
+            return (loc.x, loc.y, loc.z)
+        return None
+    
     def destroy_camera(self, camera_id: str):
         """Destroy a specific camera"""
         if camera_id in self.cameras:
@@ -151,6 +184,8 @@ class CameraManager:
                 self.cameras[camera_id].destroy()
             del self.cameras[camera_id]
             del self.image_queues[camera_id]
+            if camera_id in self.camera_positions:
+                del self.camera_positions[camera_id]
             if camera_id in self.latest_images:
                 del self.latest_images[camera_id]
             logger.info(f"Camera '{camera_id}' destroyed")

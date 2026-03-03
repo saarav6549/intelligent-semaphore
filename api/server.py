@@ -24,7 +24,8 @@ from yolo_detection import VehicleDetector, ROIMapper
 from sensing_pipeline import VehicleCounter, ObservationBuilder, StateManager
 from api.schemas import (
     ObservationResponse, ActionRequest, StateResponse,
-    HealthResponse, MetricsResponse, ConfigResponse
+    HealthResponse, MetricsResponse, ConfigResponse,
+    CameraPositionRequest
 )
 
 
@@ -276,11 +277,36 @@ async def get_metrics():
     return MetricsResponse(**metrics)
 
 
+@app.get("/camera/position", tags=["Visualization"])
+async def get_camera_position():
+    """Get current overhead camera position (x, y, z)."""
+    if not system.initialized:
+        raise HTTPException(status_code=503, detail="System not initialized")
+    pos = system.camera_manager.get_camera_position("intersection_overhead")
+    if pos is None:
+        raise HTTPException(status_code=500, detail="Camera not found")
+    return {"x": pos[0], "y": pos[1], "z": pos[2]}
+
+
+@app.patch("/camera/position", tags=["Visualization"])
+async def set_camera_position(req: CameraPositionRequest):
+    """Set overhead camera position (dynamic control)."""
+    if not system.initialized:
+        raise HTTPException(status_code=503, detail="System not initialized")
+    try:
+        system.camera_manager.set_camera_position(
+            "intersection_overhead", req.x, req.y, req.z
+        )
+        return {"status": "success", "x": req.x, "y": req.y, "z": req.z}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
 @app.get("/camera/stream", tags=["Visualization"])
 async def camera_stream():
     """
-    Stream camera feed with detections and ROIs
-    Returns MJPEG stream
+    Stream camera feed with detections, ROIs, and camera position (x,y,z) overlay.
+    Returns MJPEG stream.
     """
     if not system.initialized:
         raise HTTPException(status_code=503, detail="System not initialized")
@@ -298,6 +324,15 @@ async def camera_stream():
                         vis_image = system.roi_mapper.visualize_rois(annotated, detections)
                     else:
                         vis_image = system.roi_mapper.visualize_rois(image)
+                    
+                    # Overlay camera position (x, y, z) on screen
+                    pos = system.camera_manager.get_camera_position("intersection_overhead")
+                    if pos is not None:
+                        text = f"Camera: x={pos[0]:.1f}  y={pos[1]:.1f}  z={pos[2]:.1f}"
+                        cv2.putText(
+                            vis_image, text, (10, 35),
+                            cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 255, 0), 2, cv2.LINE_AA
+                        )
                     
                     _, buffer = cv2.imencode('.jpg', vis_image, [cv2.IMWRITE_JPEG_QUALITY, 85])
                     

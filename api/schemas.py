@@ -78,3 +78,13 @@ class ConfigResponse(BaseModel):
     action_space_size: int
     lanes: List[Dict]
     phases: List[Dict]
+
+
+class CameraPositionRequest(BaseModel):
+    """Request to set camera position"""
+    x: float = Field(..., description="X position in meters")
+    y: float = Field(..., description="Y position in meters")
+    z: float = Field(..., description="Z position (height) in meters")
+    
+    class Config:
+        json_schema_extra = {"example": {"x": 50.0, "y": -30.0, "z": 25.0}}
