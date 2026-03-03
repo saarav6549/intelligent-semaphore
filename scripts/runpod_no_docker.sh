@@ -16,6 +16,52 @@ cd "$REPO_ROOT"
 
 echo "Repo root: $REPO_ROOT"
 
+cleanup_existing() {
+  echo ""
+  echo "Stopping any existing services from previous runs..."
+
+  # Stop API (FastAPI/uvicorn)
+  pkill -f "uvicorn api.server:app" >/dev/null 2>&1 || true
+  pkill -f "python3\\.8 -m uvicorn api\\.server:app" >/dev/null 2>&1 || true
+
+  # Stop CARLA server
+  pkill -f "CarlaUE4-Linux-Shipping.*-carla-rpc-port=" >/dev/null 2>&1 || true
+  pkill -f "/home/carla/CarlaUE4\\.sh" >/dev/null 2>&1 || true
+  pkill -f "CarlaUE4\\.sh" >/dev/null 2>&1 || true
+
+  # Stop VNC/noVNC + X stack
+  pkill -f "websockify.*6080" >/dev/null 2>&1 || true
+  pkill -f "websockify.*localhost:5900" >/dev/null 2>&1 || true
+  pkill -f "x11vnc.*-rfbport 5900" >/dev/null 2>&1 || true
+  pkill -x fluxbox >/dev/null 2>&1 || true
+  pkill -f "Xvfb :99" >/dev/null 2>&1 || true
+
+  # Remove stale X lock if present
+  rm -f /tmp/.X99-lock /tmp/.X11-unix/X99 2>/dev/null || true
+
+  sleep 2
+}
+
+ports_must_be_free() {
+  local ports=("$@")
+  local busy=0
+  for p in "${ports[@]}"; do
+    if ss -lnt 2>/dev/null | grep -Eq "(:|\\])${p}[[:space:]]"; then
+      echo "ERROR: Port ${p} is still in use."
+      busy=1
+    fi
+  done
+  if [[ "$busy" -ne 0 ]]; then
+    echo ""
+    echo "Diagnostics:"
+    echo "  ss -lntp | egrep ':2000|:2001|:5900|:6080|:8000' || true"
+    exit 1
+  fi
+}
+
+command -v ss >/dev/null 2>&1 || true
+cleanup_existing
+
 echo ""
 echo "Installing system packages..."
 export DEBIAN_FRONTEND=noninteractive
@@ -92,6 +138,7 @@ x11vnc -storepasswd 1234 /root/.vnc/passwd
 mkdir -p /workspace/logs 2>/dev/null || true
 
 export DISPLAY=:99
+ports_must_be_free 5900 6080
 Xvfb :99 -screen 0 1920x1080x24 &
 sleep 2
 fluxbox &
@@ -122,6 +169,7 @@ if [[ ! -x /home/carla/CarlaUE4.sh ]]; then
 fi
 
 set +e
+ports_must_be_free 2000 2001
 (
   cd /home/carla
   # CARLA refuses root; run as the built-in 'carla' user if available
